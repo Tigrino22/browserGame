@@ -1,3 +1,5 @@
+import type { Camera } from "../graphics/Camera";
+
 export class Entity {
     private posX: number;
     private posY: number;
@@ -35,10 +37,10 @@ export class Entity {
         return this.image.complete && this.image.naturalWidth !== 0;
     }
 
-    public draw(ctx: CanvasRenderingContext2D): void {
+    public draw(ctx: CanvasRenderingContext2D, camera: Camera): void {
 
         if (this.isReady()) {
-            ctx.drawImage( this.image, this.posX, this.posY, this.size, this.size);
+            ctx.drawImage( this.image, this.posX - camera.offsetX, this.posY - camera.offsetY, this.size, this.size);
         } else {
             console.warn("Image not ready:", this.image.src);
         }

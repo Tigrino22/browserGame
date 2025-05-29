@@ -1,3 +1,4 @@
+import type { Camera } from "./Camera";
 import { Tile } from "./Tile";
 
 export class IsoMap {
@@ -38,15 +39,17 @@ export class IsoMap {
         }
     }
 
-    public drawTiles(): void {
+    public drawTiles(camera: Camera): void {
         for (let i = 0; i < this.tiles.length; i++) {
             for (let j = 0; j < this.tiles[i].length; j++) {
-                if (this.tiles[i][j]) {
-                this.tiles[i][j].draw(this.ctx);
+                const tile = this.tiles[i][j];
+                if (tile) {
+                    tile.draw(this.ctx, camera.offsetX, camera.offsetY);
                 }
             }
         }
     }
+
 
     public getTiles(): Tile[][] {
         return this.tiles;

@@ -11,16 +11,21 @@ export class Tile {
         this.color = color;
     }
 
-    draw(ctx: CanvasRenderingContext2D): void {
-        if (!ctx) return;
+    draw(ctx: CanvasRenderingContext2D, offsetX: number, offsetY: number): void {
+        const screenX = this.x - offsetX;
+        const screenY = this.y - offsetY;
+        // ne dessine pas si hors écran
+        if (screenX + this.size < 0 || screenY + this.size < 0 || screenX - this.size > ctx.canvas.width || screenY - this.size > ctx.canvas.height)
+            return;
+
         const halfW = this.size;
         const halfH = this.size / 2;
 
         ctx.beginPath();
-        ctx.moveTo(this.x, this.y - halfH)                 // haut
-        ctx.lineTo(this.x + halfW, this.y)                 // droite
-        ctx.lineTo(this.x, this.y + halfH)                 // bas
-        ctx.lineTo(this.x - halfW, this.y)                 // gauche
+        ctx.moveTo(screenX, screenY - halfH);
+        ctx.lineTo(screenX + halfW, screenY);
+        ctx.lineTo(screenX, screenY + halfH);
+        ctx.lineTo(screenX - halfW, screenY);
         ctx.closePath();
 
         ctx.fillStyle = this.color;
@@ -28,4 +33,5 @@ export class Tile {
         ctx.strokeStyle = "#333";
         ctx.stroke();
     }
+
 }

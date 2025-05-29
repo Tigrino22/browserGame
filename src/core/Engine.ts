@@ -1,5 +1,6 @@
 import { HUDController } from "../controllers/HUDControllers";
 import { Entity } from "../entity/Entity";
+import { Camera } from "../graphics/Camera";
 import { IsoMap } from "../graphics/IsoMap";
 
 export class Engine {
@@ -10,6 +11,7 @@ export class Engine {
     hudCanvas: HTMLCanvasElement;
     hudCtx: CanvasRenderingContext2D;
 
+    camera: Camera;
     map: IsoMap;
     player: Entity;
 
@@ -40,8 +42,9 @@ export class Engine {
         this.hudCanvas = hudCanvas;
         this.hudCtx = hudCtx;
 
+        this.camera = new Camera(this.gameCanvas.width, this.gameCanvas.height);
         this.map = new IsoMap(this.gameCanvas);
-        this.player = new Entity(100, 100, 32, "/player.png");
+        this.player = new Entity((this.gameCanvas.width - 32)/ 2, this.gameCanvas.height / 2 - 32, 32, "/player.png", 5);
 
         this.hudController = new HUDController();
 
@@ -53,8 +56,8 @@ export class Engine {
     }
 
     private setupInput(): void {
-        // window.addEventListener("keydown", e => this.keys[e.key] = true);
-        // window.addEventListener("keyup", e => this.keys[e.key] = false);
+        window.addEventListener("keydown", e => this.keys[e.key] = true);
+        window.addEventListener("keyup", e => this.keys[e.key] = false);
     }
 
     public start(): void {
@@ -92,20 +95,27 @@ export class Engine {
     }
 
     private input(): void {
+        let dx = 0, dy = 0;
 
+        if (this.keys["ArrowUp"])    { dx -= 0; dy -= 1; }
+        if (this.keys["ArrowDown"])  { dx += 0; dy += 1; }
+        if (this.keys["ArrowLeft"])  { dx -= 1; dy += 0; }
+        if (this.keys["ArrowRight"]) { dx += 1; dy -= 0; }
+
+        this.player.move(dx, dy);
     }
 
     private update(): void {
-        // Future logique
+        this.camera.update(this.player.getPosX(), this.player.getPosY());
     }
 
     private render(): void {
         this.gameCtx.clearRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
         this.hudCtx.clearRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
 
-        this.map.drawTiles();
-        this.player.draw(this.gameCtx);
-
+        this.map.drawTiles(this.camera);
+        this.player.draw(this.gameCtx, this.camera);
+        
         this.drawInfo();
     }
         
@@ -122,7 +132,7 @@ export class Engine {
         lines.push(`FPS: ${this.fps.toFixed(0)}`);
         lines.push(`Player:`);
         lines.push(`    PosX: ${this.player.getPosX()}`);
-        lines.push(`    PosX: ${this.player.getPosY()}`);
+        lines.push(`    PosY: ${this.player.getPosY()}`);
 
         lines.forEach((line, i) => {
             const x = 10;
