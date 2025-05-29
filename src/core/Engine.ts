@@ -1,4 +1,5 @@
 import { HUDController } from "../controllers/HUDControllers";
+import { Entity } from "../entity/Entity";
 import { IsoMap } from "../graphics/IsoMap";
 
 export class Engine {
@@ -10,7 +11,7 @@ export class Engine {
     hudCtx: CanvasRenderingContext2D;
 
     map: IsoMap;
-    // player: Entity;
+    player: Entity;
 
     keys: Record<string, boolean> = {};
 
@@ -40,6 +41,7 @@ export class Engine {
         this.hudCtx = hudCtx;
 
         this.map = new IsoMap(this.gameCanvas);
+        this.player = new Entity(100, 100, 32, "/player.png");
 
         this.hudController = new HUDController();
 
@@ -102,7 +104,7 @@ export class Engine {
         this.hudCtx.clearRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
 
         this.map.drawTiles();
-        // this.player.draw(this.ctx);
+        this.player.draw(this.gameCtx);
 
         this.drawInfo();
     }
@@ -117,13 +119,10 @@ export class Engine {
 
         const lines: string[] = [];
 
-        // const { worldX, worldY } = this.player;
-        // const isoX = (worldX - worldY) * this.tileWidth / 2 + this.offsetX;
-        // const isoY = (worldX + worldY) * this.tileHeight / 2 + this.offsetY;
-
         lines.push(`FPS: ${this.fps.toFixed(0)}`);
-        // lines.push(`Player world: (${worldX.toFixed(2)}, ${worldY.toFixed(2)})`);
-        // lines.push(`Screen (iso): (${isoX.toFixed(1)}, ${isoY.toFixed(1)})`);
+        lines.push(`Player:`);
+        lines.push(`    PosX: ${this.player.getPosX()}`);
+        lines.push(`    PosX: ${this.player.getPosY()}`);
 
         lines.forEach((line, i) => {
             const x = 10;
@@ -134,7 +133,7 @@ export class Engine {
 
         this.hudCtx.restore();
 
-            // Dessiner les coordonnées des tuiles sur le gameCanvas si activé
+        // Dessiner les coordonnées des tuiles sur le gameCanvas si activé
         if (this.hudController.shouldShowTileCoords()) {
             this.drawTileCoordinates();
         }
