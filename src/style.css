@@ -34,6 +34,11 @@ Centrage de l'application
   margin: 2em;
 }
 
+#hudCanvas {
+  padding: 1em;
+}
+
 canvas {
   margin: 2em;
+  border: white 1px solid;
 }

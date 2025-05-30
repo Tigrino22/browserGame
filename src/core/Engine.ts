@@ -1,68 +1,62 @@
 import { HUDController } from "../controllers/HUDControllers";
-import { Entity } from "../entity/Entity";
+import { Player } from "../entity/Player";
 import { Camera } from "../graphics/Camera";
 import { IsoMap } from "../graphics/IsoMap";
+import { InputHandler } from "./InputHandler";
 
 export class Engine {
-
     gameCanvas: HTMLCanvasElement;
     gameCtx: CanvasRenderingContext2D;
-
     hudCanvas: HTMLCanvasElement;
     hudCtx: CanvasRenderingContext2D;
 
     camera: Camera;
     map: IsoMap;
-    player: Entity;
-
-    keys: Record<string, boolean> = {};
-
-    private lastTime: number = 0;
-    private accumulator: number = 0;
-    private readonly timestep: number = 1000 / 60;
-    private fps: number = 0;
-    private frameCount: number = 0;
-    private fpsTimer: number = 0;
-
+    player: Player;
+    inputHandler: InputHandler;
     private hudController: HUDController;
+
+    private lastTime = 0;
+    private accumulator = 0;
+    private readonly timestep = 1000 / 60;
+
+    private fps = 0;
+    private frameCount = 0;
+    private fpsTimer = 0;
 
     constructor(gameCanvasName: string, hudCanvasName: string) {
         const gameCanvas = document.getElementById(gameCanvasName) as HTMLCanvasElement;
-        const gameCtx = gameCanvas.getContext("2d");
-
         const hudCanvas = document.getElementById(hudCanvasName) as HTMLCanvasElement;
-        const hudCtx = hudCanvas.getContext("2d");
 
-        if (!gameCanvas || !gameCtx) throw new Error("Canvas or context game not found.");
-        if (!hudCanvas || !hudCtx) throw new Error("Canvas or context HUD not found.");
+        const gameCtx = gameCanvas?.getContext("2d");
+        const hudCtx = hudCanvas?.getContext("2d");
+
+        if (!gameCanvas || !gameCtx || !hudCanvas || !hudCtx)
+            throw new Error("Canvas or context not found.");
 
         this.gameCanvas = gameCanvas;
         this.gameCtx = gameCtx;
-
         this.hudCanvas = hudCanvas;
         this.hudCtx = hudCtx;
 
         this.camera = new Camera(this.gameCanvas.width, this.gameCanvas.height);
-        this.map = new IsoMap(this.gameCanvas);
-        this.player = new Entity((this.gameCanvas.width - 32)/ 2, this.gameCanvas.height / 2 - 32, 32, "/player.png", 5);
-
+        this.map = new IsoMap(64, 20, 20);
+        this.player = new Player(64, "/player.png", 3, this.map, this.camera);
+        this.inputHandler = new InputHandler(this.gameCanvas, this.player);
         this.hudController = new HUDController();
 
         this.init();
     }
 
     private init(): void {
-        this.setupInput();
-    }
-
-    private setupInput(): void {
-        window.addEventListener("keydown", e => this.keys[e.key] = true);
-        window.addEventListener("keyup", e => this.keys[e.key] = false);
+        const tileCoords = this.map.getTileIsoPosition(5, 3);
+        if (tileCoords) {
+            this.player.setupPosition(tileCoords.x, tileCoords.y - this.map.getTileSize() / 2);
+        }
     }
 
     public start(): void {
         this.lastTime = 0;
-
         requestAnimationFrame(this.gameLoop);
     }
 
@@ -73,10 +67,11 @@ export class Engine {
         this.lastTime = timestamp;
         this.accumulator += delta;
 
-        this.input();
+        this.inputHandler.input();
 
         while (this.accumulator >= this.timestep) {
-            this.update();
+            this.camera.centerOn(this.player.getPosX(), this.player.getPosY());
+            this.player.update();
             this.accumulator -= this.timestep;
         }
 
@@ -94,45 +89,28 @@ export class Engine {
         requestAnimationFrame(this.gameLoop);
     }
 
-    private input(): void {
-        let dx = 0, dy = 0;
-
-        if (this.keys["ArrowUp"])    { dx -= 0; dy -= 1; }
-        if (this.keys["ArrowDown"])  { dx += 0; dy += 1; }
-        if (this.keys["ArrowLeft"])  { dx -= 1; dy += 0; }
-        if (this.keys["ArrowRight"]) { dx += 1; dy -= 0; }
-
-        this.player.move(dx, dy);
-    }
-
-    private update(): void {
-        this.camera.update(this.player.getPosX(), this.player.getPosY());
-    }
-
     private render(): void {
         this.gameCtx.clearRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
-        this.hudCtx.clearRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
+        this.hudCtx.clearRect(0, 0, this.hudCanvas.width, this.hudCanvas.height);
 
-        this.map.drawTiles(this.camera);
+        this.map.draw(this.gameCtx, this.camera);
         this.player.draw(this.gameCtx, this.camera);
-        
         this.drawInfo();
     }
-        
+
     private drawInfo(): void {
         this.hudCtx.save();
-
         this.hudCtx.font = "16px monospace";
         this.hudCtx.fillStyle = "white";
         this.hudCtx.strokeStyle = "black";
         this.hudCtx.lineWidth = 2;
 
-        const lines: string[] = [];
-
-        lines.push(`FPS: ${this.fps.toFixed(0)}`);
-        lines.push(`Player:`);
-        lines.push(`    PosX: ${this.player.getPosX()}`);
-        lines.push(`    PosY: ${this.player.getPosY()}`);
+        const lines = [
+            `FPS: ${this.fps.toFixed(0)}`,
+            `Player:`,
+            `    PosX: ${this.player.getPosX()}`,
+            `    PosY: ${this.player.getPosY()}`
+        ];
 
         lines.forEach((line, i) => {
             const x = 10;
@@ -143,35 +121,32 @@ export class Engine {
 
         this.hudCtx.restore();
 
-        // Dessiner les coordonnées des tuiles sur le gameCanvas si activé
         if (this.hudController.shouldShowTileCoords()) {
-            this.drawTileCoordinates();
+            // this.drawTileCoordinates();
         }
     }
 
-    private drawTileCoordinates(): void {
-        this.gameCtx.save();
-        this.gameCtx.font = "12px monospace";
-        this.gameCtx.fillStyle = "yellow";
-        this.gameCtx.strokeStyle = "black";
-        this.gameCtx.lineWidth = 1;
+    // private drawTileCoordinates(): void {
+    //     this.gameCtx.save();
+    //     this.gameCtx.font = "12px monospace";
+    //     this.gameCtx.fillStyle = "yellow";
+    //     this.gameCtx.strokeStyle = "black";
+    //     this.gameCtx.lineWidth = 1;
 
-        for (let i = 0; i < this.map.getTiles().length; i++) {
-            for (let j = 0; j < this.map.getTiles()[i].length; j++) {
-                const tile = this.map.getTiles()[i][j];
-                if (tile) {
-                    const label = `${i},${j}`;
-                    const x = tile.x - 10;
-                    const y = tile.y + 4;
+    //     const tiles = this.map.getTiles();
+    //     for (let i = 0; i < tiles.length; i++) {
+    //         for (let j = 0; j < tiles[i].length; j++) {
+    //             const tile = tiles[i][j];
+    //             if (tile) {
+    //                 const label = `${i},${j}`;
+    //                 const x = tile.x - 10;
+    //                 const y = tile.y + 4;
+    //                 this.gameCtx.strokeText(label, x, y);
+    //                 this.gameCtx.fillText(label, x, y);
+    //             }
+    //         }
+    //     }
 
-                    this.gameCtx.strokeText(label, x, y);
-                    this.gameCtx.fillText(label, x, y);
-                }
-            }
-        }
-
-        this.gameCtx.restore();
-    }
-
-
+    //     this.gameCtx.restore();
+    // }
 }

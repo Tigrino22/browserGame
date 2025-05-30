@@ -1,37 +1,50 @@
+import type { Camera } from "../graphics/Camera";
+
+/**
+ * Classe représentant une tuile isométrique.
+ */
 export class Tile {
-    x: number;
-    y: number;
-    size: number;
-    color: string;
+    private posX: number;
+    private posY: number;
+    private size: number;
+    private image: HTMLImageElement;
+    private walkable: boolean;
 
-    constructor(x: number, y: number, size: number, color: string = "#555") {
-        this.x = x;
-        this.y = y;
+    constructor(posX: number, posY: number, size: number, imageSrc: string, walkable: boolean = true) {
+        this.posX = posX;
+        this.posY = posY;
         this.size = size;
-        this.color = color;
+        this.walkable = walkable;
+
+        this.image = new Image();
+        this.image.src = imageSrc;
     }
 
-    draw(ctx: CanvasRenderingContext2D, offsetX: number, offsetY: number): void {
-        const screenX = this.x - offsetX;
-        const screenY = this.y - offsetY;
-        // ne dessine pas si hors écran
-        if (screenX + this.size < 0 || screenY + this.size < 0 || screenX - this.size > ctx.canvas.width || screenY - this.size > ctx.canvas.height)
-            return;
-
-        const halfW = this.size;
-        const halfH = this.size / 2;
-
-        ctx.beginPath();
-        ctx.moveTo(screenX, screenY - halfH);
-        ctx.lineTo(screenX + halfW, screenY);
-        ctx.lineTo(screenX, screenY + halfH);
-        ctx.lineTo(screenX - halfW, screenY);
-        ctx.closePath();
-
-        ctx.fillStyle = this.color;
-        ctx.fill();
-        ctx.strokeStyle = "#333";
-        ctx.stroke();
+    /**
+     * Retourne si la tuile est praticable par le joueur.
+     */
+    public isWalkable(): boolean {
+        return this.walkable;
     }
 
+    /**
+     * Retourne la position en pixel iso.
+     */
+    public getPosX(): number { return this.posX; }
+    public getPosY(): number { return this.posY; }
+
+    /**
+     * Dessine la tuile dans le canvas en tenant compte de la caméra.
+     */
+    public draw(ctx: CanvasRenderingContext2D, camera: Camera): void {
+        if (this.image.complete && this.image.naturalWidth !== 0) {
+            ctx.drawImage(
+                this.image,
+                this.posX - camera.offsetX,
+                this.posY - camera.offsetY,
+                this.size,
+                this.size
+            );
+        }
+    }
 }

@@ -1,27 +1,24 @@
+/**
+ * Classe représentant la caméra pour gérer le viewport dans le canvas.
+ */
 export class Camera {
+    public offsetX: number;
+    public offsetY: number;
+    private viewportWidth: number;
+    private viewportHeight: number;
 
-    private _x: number;
-    private _y: number;
-    private canvasWidth: number;
-    private canvasHeight: number;
-
-    constructor(canvasWidth: number, canvasHeight: number) {
-        this.canvasWidth = canvasWidth;
-        this.canvasHeight = canvasHeight;
-        this._x = 0;
-        this._y = 0;
+    constructor(viewportWidth: number, viewportHeight: number) {
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.viewportWidth = viewportWidth;
+        this.viewportHeight = viewportHeight;
     }
 
-    public update(playerX: number, playerY: number): void {
-        this._x = playerX - this.canvasWidth / 2;
-        this._y = playerY - this.canvasHeight / 2;
-    }
-
-    public get offsetX(): number {
-        return this._x;
-    }
-
-    public get offsetY(): number {
-        return this._y;
+    /**
+     * Centre la caméra sur une position donnée (par exemple, le joueur).
+     */
+    public centerOn(x: number, y: number): void {
+        this.offsetX = x - this.viewportWidth / 2;
+        this.offsetY = y - this.viewportHeight / 2;
     }
 }
